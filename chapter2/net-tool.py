@@ -79,6 +79,79 @@ def main():
     if listen:
         server_loop()
 
+def client_sender(buffer):
+
+    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    try:
+        # connect to target host
+        client.connect((target,port))
+
+        if len(buffer):
+            client.sendto(buffer)
+        
+        while True:
+            #  wait for data back
+            recv_len = 1
+            response = ""
+
+            while recv_len:
+
+                data        = client.recv(4096)
+                recv_len    = len(data)
+                response    += data
+
+                if recv_len < 4096:
+                    break
+
+            print(response)
+
+            # wait for more input
+            buffer = raw_input("")
+            buffer += "\n"
+
+            # send response
+            client.send(buffer)
+
+    except:
+
+        print("[*] Exception! Exiting.")
+
+        # tear down connection
+        client.close()
+
+def server_loop():
+    global target
+
+    # if no target is defined, listen on all interfaces
+    if not len(target):
+        target = "0.0.0.0"         
+
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.bind((target, port))
+    server.listen(5)
+
+    while True:
+        client_socket, addr = server.accept()
+
+        #start thread to handle new client
+        client_thread = threading.Thread(target=client_handler,args=(client_socket,))
+        client_thread.start()
+
+def run_command(command):
+
+    # trim newline
+    command = command.rstrip()
+
+    # run command and grab output
+    try:
+        output = subprocess.check_output(command,stderr=subprocess.STDOUT, shell=true)
+    except:
+        output = "failed to execute command.\r\n"
+
+    return output
+
+
 main()
 
 
